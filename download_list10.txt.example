@@ -1,0 +1,9 @@
+# 示例下载列表文件
+# 请将此文件重命名为 download_list10.txt 并添加您要下载的小说URL
+# 每行一个URL，以 # 开头的行为注释
+# 支持并行下载，可使用 -t 参数调整线程数（默认8个线程）
+
+# 示例URL（请替换为实际的小说URL）:
+# https://www.ibiquges.org/book/12345/
+# https://www.lwma.cc/novel/67890/
+# https://www.bqg228.com/book/11111/
