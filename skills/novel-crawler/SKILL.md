@@ -6,7 +6,7 @@ description: 当用户需要从小说网站下载整本小说为 TXT 文件、�
 category: Tools
 description_zh: 多站点小说爬虫——整本下载为带元数据头部的 TXT，断点续传，多镜像互备
 description_en: Multi-site novel crawler — download full books as metadata-rich TXT with resume support
-version: 3.0.0
+version: 10.0.0
 author: firewell
 ---
 

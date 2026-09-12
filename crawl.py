@@ -32,7 +32,7 @@ log = logging.getLogger("crawl")
 
 
 def main():
-    ap = argparse.ArgumentParser(description="统一小说爬虫（src 工程化版 v3）")
+    ap = argparse.ArgumentParser(description="统一小说爬虫（工程化版 v10）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_dl = sub.add_parser("download", help="按书籍页 URL 下载整本")

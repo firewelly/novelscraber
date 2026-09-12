@@ -1,6 +1,6 @@
-# novelscraber — 统一小说爬虫 v3.0
+# novelscraber — 统一小说爬虫 v10.0
 
-> 本仓库为 2025 年 Novel Scraper v9.6 的完全重写版（v3.0）：多站点适配器架构、
+> 本仓库为 2025 年 Novel Scraper v9.6 的完全重写版（v10.0，版本号续接 v9.6）：多站点适配器架构、
 > TXT / SQLite 数据库 / 双输出三种模式、书籍元数据（作者/简介/来源URL）、
 > 断点续传、多镜像互备、Playwright 渲染。
 
