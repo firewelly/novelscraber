@@ -93,6 +93,13 @@ chapters : id, novel_id→novels, chapter_index, title, content, url   UNIQUE(no
 新增站点：继承 `novel_crawler/sites/base.py::SiteAdapter` 实现
 `fetch_meta / fetch_chapters / fetch_content`，在 `sites/__init__.py` 登记即可。
 
+## Agent Skill（供其他 Agent 调用）
+
+`skills/novel-crawler/SKILL.md` 是标准的 Agent Skill 定义：把本仓库（或其中的
+`skills/novel-crawler/`）安装到 Agent 的技能目录后，Agent 即可按技能指引调用
+`crawl.py` 完成小说下载（TXT 模式为主）、断点续传与站点体检。技能内容与
+README 用法一致，含故障处理与合规边界。
+
 ## 许可
 
 BSD-3-Clause，见 [LICENSE](LICENSE)。
