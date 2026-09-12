@@ -1,127 +1,103 @@
-# Novel Scraper
+# novelscraber — 统一小说爬虫 v3.0
 
-一个用于从各种小说网站抓取小说内容的Python工具集。
+> 本仓库为 2025 年 Novel Scraper v9.6 的完全重写版（v3.0）：多站点适配器架构、
+> TXT / SQLite 数据库 / 双输出三种模式、书籍元数据（作者/简介/来源URL）、
+> 断点续传、多镜像互备、Playwright 渲染。
 
 ## 功能特性
 
-- 支持多个小说网站的内容抓取
-- **并行化下载**：支持多线程同时下载多部小说，大幅提升下载速度
-- 自动重试机制，处理网络错误
-- 支持批量下载多部小说
-- 自动文件整理功能
-- 支持多种编码格式（UTF-8和GB18030自动识别）
-- 命令行参数支持，可自定义输入文件和线程数
-
-## 支持的网站
-
-- www.yueduba2.cc（专门优化）
-- www.ibiquges.org
-- www.lwma.cc
-- www.bqg228.com
-- www.biquzw.la
-- www.bqlo.cc
-- www.paozww.com
-- www.zzxx.org
-- www.zxxs123.com
-- www.qqxsnew.com
-- www.xiushukong.com
-- www.biqusa.com
-- www.biqudu.net
-- www.xbiquwx.la
-- www.biqufan.com
-- www.biquwx.la
-- 以及更多...
+- **多站点**：一个适配器架构覆盖 og:novel 元数据站、笔趣阁多镜像家族、SPA 动态站
+- **三种输出模式**：`txt`（默认）/ `db`（SQLite）/ `both`（同时），DB 亦可作续传状态源
+- **书籍元数据**：书名 / 作者 / 来源(站点+完整URL) / 分类 / 状态 / 更新时间 / 简介 / 抓取时间
+- **断点续传**：TXT 用 `\n\n{章节标题}\n\n` 标记定位，DB 用章节表查询，跨次运行自动补缺
+- **多镜像互备**：笔趣阁家族 16 个同构镜像，单章失败自动切换兄弟镜像重试
+- **进程级浏览器单例**：Playwright 全书共用一个浏览器实例（比逐章启动快 10 倍+）
+- **正文清洗**：站点 UI 行剔除、广告码删除、代词还原（taxing8→你 等）
 
 ## 安装
 
-1. 克隆此仓库：
-```bash
-git clone https://github.com/your-username/novelscraper.git
-cd novelscraper
-```
-
-2. 安装依赖：
 ```bash
 pip install -r requirements.txt
+playwright install chromium   # 仅 bqg/xbqk 等渲染站点需要
 ```
 
-## 使用方法
+## 用法
 
-### 批量下载小说
-
-1. 创建一个名为 `download_list10.txt` 的文件，每行包含一个小说的URL
-2. 运行批量下载脚本：
-
-**基本用法：**
 ```bash
-python novel_scraper.py
+# 按书籍页 URL 下载（域名自动识别站点），默认 txt 模式输出到 ./novels/
+python3 crawl.py download --url https://www.xbiquge345.com/book/35247/
+
+# 双输出模式（TXT + SQLite 同时写）
+python3 crawl.py download --url "https://quanben-xiaoshuo.com/n/tianmoshentan/xiaoshuo.html" \
+    --mode both --db my_novels.db
+
+# 仅数据库模式
+python3 crawl.py download --url ... --mode db
+
+# 笔趣阁家族（Playwright 渲染，多镜像）
+python3 crawl.py download --site bqg --url "https://www.bqg48.cc/xs/2134/"
+
+# zzxx.org 增量扫描（状态存 zzxx_crawler.db）
+python3 crawl.py zzxx                # 增量扫描+下载
+python3 crawl.py zzxx --update       # 补新章节 + 旧文件头部元数据升级
+python3 crawl.py zzxx --id 72201     # 指定 id 补漏
+
+# 测试与体检
+python3 crawl.py download --url ... --limit 3    # 只下前 3 章试水
+python3 crawl.py check-sites                     # 全站可用性体检
 ```
 
-**高级用法（自定义参数）：**
-```bash
-# 指定输入文件和线程数
-python novel_scraper.py -i my_novel_list.txt -t 16
+通用选项：`--output DIR`（默认 `./novels`）、`--proxy socks5://127.0.0.1:1080`、`--mode txt|db|both`。
 
-# 或使用完整参数名
-python novel_scraper.py --input_file my_novel_list.txt --max_workers 16
+## TXT 输出格式（v3 头部 + 章节）
+
+```
+天魔神谭
+作者：手枪
+来源：xbiquge345 https://www.xbiquge345.com/book/35247/
+分类：玄幻魔法
+状态：连载中
+更新时间：2026-02-25 16:17:11
+简介：……
+抓取时间：2026-09-12 09:24:45
+
+
+第一部 第一章 没出息的亚文
+
+（正文……）
 ```
 
-**参数说明：**
-- `-i, --input_file`: 指定输入文件名（默认：download_list10.txt）
-- `-t, --max_workers`: 指定最大线程数（默认：8）
+## 数据库模式（SQLite）
 
-### 下载单部小说
-
-使用 `single_novel_scraper.py` 下载单部小说：
-```bash
-python single_novel_scraper.py
+```
+novels   : id, title, author, category, status, update_time, description,
+           source_site, source_url, chapter_count, crawl_time   UNIQUE(title, source_site)
+chapters : id, novel_id→novels, chapter_index, title, content, url   UNIQUE(novel_id, chapter_index)
 ```
 
-注意：需要在脚本中修改 `url_base` 变量为目标小说的URL。
+`--mode db/both` 时默认写 `novels.db`（`--db` 可改路径）。续传时自动合并 DB 已有章节，
+不会丢章；`--mode both` 时 TXT 与 DB 内容保持一致。
 
-### 文件整理
+## 站点支持（2026-09-12 实测）
 
-下载完成后，使用清理脚本整理文件：
-```bash
-python clean.py
-```
+| key | 站点 | 方式 | 元数据 |
+|-----|------|------|--------|
+| zzxx | zzxx.org | 静态 | og:novel 完整 |
+| kuaizhui | kuaizhui.net | 静态 | og:novel 完整 |
+| xbiquge345 | xbiquge345.com | 静态 | og:novel 完整 |
+| quanben | quanben-xiaoshuo.com | 静态 | 标题解析 |
+| yebiquge | yebiquge.com | 静态 | 部分 |
+| bqg | 笔趣阁家族 16 镜像 | Playwright | 书页解析 |
+| xbqk | xbqk.cc / bqg504 / bqg930 / bqg329 | Playwright | 页面解析 |
 
-这将把所有下载的txt文件移动到 `novels` 文件夹中。
+新增站点：继承 `novel_crawler/sites/base.py::SiteAdapter` 实现
+`fetch_meta / fetch_chapters / fetch_content`，在 `sites/__init__.py` 登记即可。
 
-## 文件说明
+## 许可
 
-- `novel_scraper.py`: 主要的批量下载脚本（基于dl9.6并行化版本）
-- `single_novel_scraper.py`: 单部小说下载脚本
-- `clean.py`: 文件整理工具
-- `requirements.txt`: Python依赖包列表
-- `download_list10.txt`: 下载列表文件（需要用户创建）
+BSD-3-Clause，见 [LICENSE](LICENSE)。
 
-## 注意事项
+## 免责声明
 
-1. 请遵守网站的robots.txt和使用条款
-2. 建议在使用时设置适当的延迟，避免对服务器造成过大压力
-3. 仅供学习和个人使用，请勿用于商业用途
-4. 下载的内容请遵守相关版权法律法规
-
-## 版本历史
-
-- **v9.6**: 引入并行化下载功能，支持多线程同时下载，大幅提升下载速度
-- v9.5: 专门优化 www.yueduba2.cc 网站的下载流程
-- v9.4.1: 测试支持 www.bqlo.cc
-- v9.4p: 启用UTF-8和GB18030自动识别，适配更多网站
-- v9.3p: 添加命令行参数支持，可自定义输入文件和最大线程数
-- v9.2p: 优化输出格式，显示书名而非章节名
-- v9.1p: 尝试引入并行化功能
-- v9.1: 适配 www.ibiquges.org
-- v9: 适配 www.lwma.cc 并清理代码
-- v8c: 修复503错误的性能问题
-- v8B: 适配 www.bqg228.com
-- v8A: 适配多个新网站
-
-## 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 贡献
-
-欢迎提交问题和拉取请求来改进这个项目。
+本工具仅用于个人学习与已获授权内容的备份。请尊重版权，勿用于商业用途或
+传播盗版内容；使用本工具产生的任何法律责任由使用者自行承担。
